@@ -96,7 +96,21 @@ python src/web_app.py
 ```
 
 Then open **http://127.0.0.1:5000** in your browser. The web app reuses
-`embedder.py` and `database.py`, and saves to the same `embeddings.pkl`.
+`embedder.py`, `database.py` and `recognize.py`, and saves to `embeddings.pkl`.
+
+## Phase 4 — Recognition logic
+
+`src/recognize.py` makes the "name vs Unknown" decision. The `FaceRecognizer`
+class embeds a face, finds the nearest enrolled person, and applies the
+`RECOGNITION_THRESHOLD` (currently `1.0`, tuned in Phase 6). It also reports a
+0-100% confidence score.
+
+```powershell
+python src/recognize.py --image photo.jpg   # recognize faces in an image
+python src/recognize.py --webcam 1           # live recognition from a camera
+```
+
+The web app and the apps all use this one module for recognition.
 
 ## Team
 

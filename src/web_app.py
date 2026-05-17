@@ -10,6 +10,7 @@ A small Flask web server that puts the project in the browser. It has two parts:
 The actual brains are reused from earlier phases:
   embedder.py  -> turns a face image into a 512-d embedding
   database.py  -> stores / loads / searches the enrolled people
+  recognize.py -> applies the threshold to decide name vs. "Unknown" (Phase 4)
 
 Run it with:
     python src/web_app.py
@@ -25,22 +26,20 @@ from flask import Flask, request, jsonify, send_file
 
 # Make sure sibling modules in src/ can be imported.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from embedder import FaceEmbedder
-from database import FaceDatabase, MIN_PHOTOS
+from database import MIN_PHOTOS
+from recognize import FaceRecognizer
 
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SRC_DIR)
 WEB_DIR = os.path.join(PROJECT_ROOT, "web")
 
-# A face closer than this distance is treated as a match; further = "Unknown".
-# This is a provisional value - Phase 6 tunes it properly with real data.
-RECOGNITION_THRESHOLD = 1.0
-
 app = Flask(__name__)
 
 print("Loading the FaceNet model, please wait ...")
-embedder = FaceEmbedder()           # loads MTCNN + FaceNet once
-db = FaceDatabase.load()            # loads embeddings.pkl if it exists
+# FaceRecognizer builds the embedder and loads the database in one step.
+recognizer = FaceRecognizer()
+embedder = recognizer.embedder      # shared with the recognizer (one copy)
+db = recognizer.database            # shared with the recognizer (one copy)
 
 
 def _read_image(file_storage):
@@ -116,21 +115,14 @@ def recognize():
     if len(db) == 0:
         return jsonify({"ok": False, "message": "No one is enrolled yet."}), 400
 
-    emb = embedder.embed_single(img)
-    if emb is None:
+    # Phase 4: the FaceRecognizer does embed -> nearest -> threshold decision.
+    result = recognizer.recognize_single(img)
+    if result is None:
         return jsonify({"ok": True, "found": False, "message": "No face detected."})
 
-    name, distance = db.find_nearest(emb)
-    recognized = distance <= RECOGNITION_THRESHOLD
-    return jsonify({
-        "ok": True,
-        "found": True,
-        "recognized": recognized,
-        "name": name if recognized else "Unknown",
-        "nearest": name,                        # closest match even if "Unknown"
-        "distance": round(distance, 4),
-        "threshold": RECOGNITION_THRESHOLD,
-    })
+    result["ok"] = True
+    result["found"] = True
+    return jsonify(result)
 
 
 @app.route("/remove", methods=["POST"])

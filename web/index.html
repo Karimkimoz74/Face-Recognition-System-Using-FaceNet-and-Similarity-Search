@@ -397,7 +397,8 @@ function showResult(data) {
   if (data.recognized) {
     box.className = "result match";
     box.innerHTML = '<div class="big">✓ ' + data.name + '</div>' +
-      '<div class="det">distance ' + data.distance +
+      '<div class="det">confidence ' + data.confidence + '%' +
+      '  ·  distance ' + data.distance +
       '  (threshold ' + data.threshold + ')</div>';
   } else {
     box.className = "result unknown";
