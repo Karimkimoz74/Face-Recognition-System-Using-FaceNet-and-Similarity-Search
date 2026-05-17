@@ -1,0 +1,9 @@
+# Face Recognition System - Python dependencies
+# Install with:  pip install -r requirements.txt
+
+torch              # deep learning framework (runs the network)
+torchvision        # image utilities for torch
+facenet-pytorch    # pre-trained FaceNet model + MTCNN face detector
+opencv-python      # webcam capture, drawing, image I/O
+numpy              # embedding storage + Euclidean distance
+Pillow             # image loading (used by facenet-pytorch)

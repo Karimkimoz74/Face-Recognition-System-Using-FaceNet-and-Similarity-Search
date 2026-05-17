@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Project artifacts
+embeddings.pkl
+*.pkl
+data/faces/**/*.jpg
+data/faces/**/*.jpeg
+data/faces/**/*.png
+evaluation/results/
+
+# Model / torch cache
+*.pt
+*.pth
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
