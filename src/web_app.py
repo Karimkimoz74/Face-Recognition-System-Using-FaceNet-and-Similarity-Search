@@ -105,7 +105,7 @@ def enroll():
 
 @app.route("/recognize", methods=["POST"])
 def recognize():
-    """Identify the face in one uploaded/webcam image."""
+    """Identify EVERY face in one uploaded/webcam image (Phase 5: multi-face)."""
     if "image" not in request.files:
         return jsonify({"ok": False, "message": "No image was received."}), 400
     img = _read_image(request.files["image"])
@@ -115,14 +115,20 @@ def recognize():
     if len(db) == 0:
         return jsonify({"ok": False, "message": "No one is enrolled yet."}), 400
 
-    # Phase 4: the FaceRecognizer does embed -> nearest -> threshold decision.
-    result = recognizer.recognize_single(img)
-    if result is None:
-        return jsonify({"ok": True, "found": False, "message": "No face detected."})
+    # FaceRecognizer (Phase 4) identifies every face: each result has a box.
+    faces = recognizer.recognize_image(img)
+    return jsonify({"ok": True, "count": len(faces), "faces": faces})
 
-    result["ok"] = True
-    result["found"] = True
-    return jsonify(result)
+
+@app.route("/detect", methods=["POST"])
+def detect():
+    """Return just the face boxes (no identity) - used for the live preview."""
+    if "image" not in request.files:
+        return jsonify({"ok": False, "boxes": []})
+    img = _read_image(request.files["image"])
+    if img is None:
+        return jsonify({"ok": False, "boxes": []})
+    return jsonify({"ok": True, "boxes": embedder.detect_faces(img)})
 
 
 @app.route("/remove", methods=["POST"])

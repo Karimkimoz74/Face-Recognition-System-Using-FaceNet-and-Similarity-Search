@@ -98,6 +98,9 @@ python src/web_app.py
 Then open **http://127.0.0.1:5000** in your browser. The web app reuses
 `embedder.py`, `database.py` and `recognize.py`, and saves to `embeddings.pkl`.
 
+The Testing section draws boxes on the image/video for **every** face
+(green = recognized, amber = Unknown) and supports live webcam recognition.
+
 ## Phase 4 — Recognition logic
 
 `src/recognize.py` makes the "name vs Unknown" decision. The `FaceRecognizer`

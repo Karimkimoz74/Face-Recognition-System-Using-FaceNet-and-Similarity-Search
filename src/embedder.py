@@ -125,6 +125,20 @@ class FaceEmbedder:
         best = max(faces, key=lambda f: f["prob"])
         return best["embedding"]
 
+    def detect_faces(self, image):
+        """
+        Just find WHERE the faces are - no embedding. Lighter and faster than
+        embed(), used for the live "face detected" preview boxes.
+        Returns a list of boxes, each [x1, y1, x2, y2].
+        """
+        pil = self._to_pil(image)
+        boxes, probs = self.mtcnn.detect(pil)
+        if boxes is None:
+            return []
+        return [[int(v) for v in box]
+                for box, prob in zip(boxes, probs)
+                if prob is not None and prob >= MIN_PROB]
+
 
 def euclidean_distance(a, b):
     """Straight-line distance between two embedding vectors. Smaller = more similar."""

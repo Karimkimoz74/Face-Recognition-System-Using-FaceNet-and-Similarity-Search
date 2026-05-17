@@ -13,13 +13,13 @@
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text);
     font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif; line-height:1.55; }
-  .wrap { max-width:1000px; margin:0 auto; padding:32px 22px 80px; }
+  .wrap { max-width:1040px; margin:0 auto; padding:32px 22px 80px; }
   header { border-bottom:2px solid var(--border); padding-bottom:18px; margin-bottom:22px; }
-  h1 { margin:0 0 4px; font-size:1.7rem;
+  h1 { margin:0 0 4px; font-size:1.75rem;
     background:linear-gradient(90deg,var(--accent),var(--accent2));
     -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
   .sub { color:var(--muted); font-size:.92rem; }
-  h2 { font-size:1.2rem; color:var(--accent); margin:0 0 14px; }
+  h2 { font-size:1.2rem; color:var(--accent); margin:0 0 6px; }
   .card { background:var(--card); border:1px solid var(--border);
     border-radius:12px; padding:22px; margin:18px 0; }
   .num { display:inline-block; width:26px; height:26px; line-height:26px;
@@ -29,12 +29,12 @@
   input[type=text] { width:100%; padding:10px 12px; border-radius:8px;
     border:1px solid var(--border); background:var(--card2); color:var(--text);
     font-size:1rem; }
+  input[type=file] { font-size:.85rem; }
   button { cursor:pointer; border:none; border-radius:8px; padding:9px 16px;
     font-size:.9rem; font-weight:600; background:var(--accent); color:#0f172a; }
   button:hover { filter:brightness(1.1); }
   button.ghost { background:transparent; color:var(--accent);
     border:1px solid var(--border); }
-  button.danger { background:var(--red); color:#0f172a; }
   button:disabled { opacity:.45; cursor:not-allowed; }
   .tabs { display:flex; gap:6px; margin:14px 0 0; }
   .tab { padding:7px 14px; border-radius:8px 8px 0 0; background:var(--card2);
@@ -43,8 +43,11 @@
   .tab.active { background:var(--accent); color:#0f172a; }
   .panel { border:1px solid var(--border); border-radius:0 8px 8px 8px;
     padding:16px; background:var(--card2); }
-  video { width:100%; max-width:420px; border-radius:8px; background:#000;
-    display:block; }
+  /* video + overlay canvas stacked on top of each other */
+  .videowrap { position:relative; max-width:480px; margin-top:10px; }
+  .videowrap video { width:100%; display:block; border-radius:8px; background:#000; }
+  .videowrap canvas.overlay { position:absolute; top:0; left:0;
+    width:100%; height:100%; }
   select { padding:7px 10px; border-radius:8px; border:1px solid var(--border);
     background:var(--card2); color:var(--text); font-size:.85rem; max-width:100%; }
   .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px; }
@@ -63,23 +66,26 @@
   .chip span { cursor:pointer; color:var(--red); font-weight:700; }
   .msg { margin-top:12px; padding:10px 14px; border-radius:8px; font-size:.9rem;
     display:none; }
-  .msg.ok { display:block; background:#0d3026; border:1px solid var(--green);
-    color:var(--green); }
-  .msg.err { display:block; background:#3a1212; border:1px solid var(--red);
-    color:var(--red); }
-  .msg.info { display:block; background:#10243a; border:1px solid var(--accent);
-    color:var(--accent); }
-  .result { margin-top:14px; padding:18px; border-radius:10px; text-align:center;
-    border:1px solid var(--border); background:var(--card2); }
-  .result .big { font-size:1.6rem; font-weight:800; }
-  .result .det { color:var(--muted); font-size:.85rem; margin-top:4px; }
-  .result.match { border-color:var(--green); }
-  .result.match .big { color:var(--green); }
-  .result.unknown { border-color:var(--amber); }
-  .result.unknown .big { color:var(--amber); }
-  .result.none { border-color:var(--muted); }
+  .msg.ok   { display:block; background:#0d3026; border:1px solid var(--green); color:var(--green); }
+  .msg.err  { display:block; background:#3a1212; border:1px solid var(--red);   color:var(--red); }
+  .msg.info { display:block; background:#10243a; border:1px solid var(--accent);color:var(--accent); }
+  .resultCanvas { max-width:100%; margin-top:12px; border-radius:8px;
+    border:1px solid var(--border); display:none; }
+  .facelist { margin-top:12px; display:flex; flex-direction:column; gap:6px; }
+  .facerow { display:flex; align-items:center; gap:10px; padding:8px 12px;
+    border-radius:8px; background:var(--card2); border:1px solid var(--border);
+    font-size:.9rem; }
+  .facerow .dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .facerow.match .dot   { background:var(--green); }
+  .facerow.unknown .dot { background:var(--amber); }
+  .facerow .nm { font-weight:700; }
+  .facerow.match .nm   { color:var(--green); }
+  .facerow.unknown .nm { color:var(--amber); }
+  .facerow .det { color:var(--muted); font-size:.8rem; margin-left:auto; }
   .hint { font-size:.8rem; color:var(--muted); margin-top:6px; }
   .hidden { display:none; }
+  .live { display:inline-block; width:9px; height:9px; border-radius:50%;
+    background:var(--red); margin-right:6px; }
 </style>
 </head>
 <body>
@@ -110,21 +116,21 @@
     <div class="tab" data-tab="enrWebcam">Use webcam</div>
   </div>
 
-  <!-- upload panel -->
   <div class="panel" id="enrUpload">
     <label for="enrollFiles">Choose one or more photos</label>
     <input type="file" id="enrollFiles" accept="image/*" multiple>
   </div>
 
-  <!-- webcam panel -->
   <div class="panel hidden" id="enrWebcam">
     <div class="row">
       <select id="enrCam"></select>
       <button class="ghost" id="enrCamStart">Enable camera</button>
     </div>
-    <div style="margin-top:10px">
+    <div class="videowrap">
       <video id="enrVideo" autoplay playsinline muted></video>
+      <canvas class="overlay" id="enrOverlay"></canvas>
     </div>
+    <div class="hint">A blue box shows a face is detected — capture when you see it.</div>
     <div class="row">
       <button id="enrSnap" disabled>📷 Capture photo</button>
     </div>
@@ -144,40 +150,38 @@
 <div class="card">
   <h2><span class="num">2</span>Testing the Enrollment</h2>
   <p class="hint">Provide a face and the system finds the closest enrolled person.
-     If the closest match is too far away, it answers "Unknown".</p>
+     Every face in the picture is boxed: <b style="color:var(--green)">green</b> =
+     recognized, <b style="color:var(--amber)">amber</b> = Unknown.</p>
 
   <div class="tabs">
     <div class="tab active" data-tab="recUpload">Upload image</div>
     <div class="tab" data-tab="recWebcam">Use webcam</div>
   </div>
 
-  <!-- upload panel -->
   <div class="panel" id="recUpload">
     <label for="recFile">Choose a photo to identify</label>
     <input type="file" id="recFile" accept="image/*">
     <div class="row">
       <button id="recUploadBtn">Recognize</button>
     </div>
+    <canvas class="resultCanvas" id="recCanvas"></canvas>
+    <div class="facelist" id="recUploadList"></div>
   </div>
 
-  <!-- webcam panel -->
   <div class="panel hidden" id="recWebcam">
     <div class="row">
       <select id="recCam"></select>
       <button class="ghost" id="recCamStart">Enable camera</button>
     </div>
-    <div style="margin-top:10px">
+    <div class="videowrap">
       <video id="recVideo" autoplay playsinline muted></video>
+      <canvas class="overlay" id="recOverlay"></canvas>
     </div>
     <div class="row">
       <button id="recOnce" disabled>Recognize once</button>
       <button id="recLive" class="ghost" disabled>▶ Start live recognition</button>
     </div>
-  </div>
-
-  <div class="result none" id="recResult">
-    <div class="big">—</div>
-    <div class="det">Result will appear here</div>
+    <div class="facelist" id="recWebcamList"></div>
   </div>
   <div class="msg" id="recMsg"></div>
 </div>
@@ -188,14 +192,12 @@
 // ====================================================================
 const $ = (id) => document.getElementById(id);
 
-/** Switch the visible panel inside a group of tabs. */
 function wireTabs(tabSelector) {
   document.querySelectorAll(tabSelector).forEach(tab => {
     tab.addEventListener("click", () => {
       const group = tab.parentElement;
       group.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
       tab.classList.add("active");
-      // panels are the siblings right after the tabs group
       let el = group.nextElementSibling;
       while (el && el.classList.contains("panel")) {
         el.classList.add("hidden");
@@ -210,7 +212,7 @@ wireTabs(".tabs .tab");
 function showMsg(id, text, kind) {
   const el = $(id);
   el.textContent = text;
-  el.className = "msg " + kind;
+  el.className = text ? ("msg " + kind) : "msg";
 }
 
 /** Capture the current video frame as a JPEG Blob. */
@@ -226,12 +228,78 @@ function grabFrame(video) {
 }
 
 // ====================================================================
-//  Camera handling (shared by both sections)
+//  Drawing face boxes
+// ====================================================================
+/** Draw recognised faces (green/amber boxes + labels) onto a 2D context. */
+function drawFaces(ctx, faces) {
+  const W = ctx.canvas.width;
+  faces.forEach(f => {
+    const [x1, y1, x2, y2] = f.box;
+    const ok = f.recognized;
+    const color = ok ? "#34d399" : "#fbbf24";
+    ctx.lineWidth = Math.max(2, W / 220);
+    ctx.strokeStyle = color;
+    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+    const label = ok ? (f.name + "  " + f.confidence + "%") : "Unknown";
+    const fs = Math.max(13, W / 36);
+    ctx.font = "bold " + fs + "px Segoe UI, sans-serif";
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = color;
+    ctx.fillRect(x1, y1 - fs - 8, tw + 12, fs + 8);
+    ctx.fillStyle = "#0f172a";
+    ctx.fillText(label, x1 + 6, y1 - 6);
+  });
+}
+
+/** Draw plain detection boxes (no identity) - used in the enroll preview. */
+function drawPlainBoxes(ctx, boxes) {
+  const W = ctx.canvas.width;
+  ctx.lineWidth = Math.max(2, W / 220);
+  ctx.strokeStyle = "#38bdf8";
+  boxes.forEach(b => ctx.strokeRect(b[0], b[1], b[2] - b[0], b[3] - b[1]));
+}
+
+/** Size an overlay canvas to match its video, then draw with drawFn(ctx). */
+function paintOverlay(canvas, video, drawFn) {
+  if (!video.videoWidth) return;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawFn(ctx);
+}
+
+/** Show a text list of recognised faces. */
+function renderFaceList(containerId, faces) {
+  const box = $(containerId);
+  box.innerHTML = "";
+  if (!faces || !faces.length) {
+    box.innerHTML = '<div class="hint">No face detected.</div>';
+    return;
+  }
+  faces.forEach((f, i) => {
+    const row = document.createElement("div");
+    row.className = "facerow " + (f.recognized ? "match" : "unknown");
+    const name = f.recognized ? f.name : "Unknown";
+    const det = f.recognized
+      ? ("confidence " + f.confidence + "%  ·  distance " + f.distance)
+      : ('closest "' + f.nearest + '"  ·  distance ' + f.distance);
+    row.innerHTML = '<div class="dot"></div>' +
+      '<div class="nm">Face ' + (i + 1) + ': ' + name + '</div>' +
+      '<div class="det">' + det + '</div>';
+    box.appendChild(row);
+  });
+}
+
+// ====================================================================
+//  Camera handling
 // ====================================================================
 async function fillCameraList(selectEl) {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const cams = devices.filter(d => d.kind === "videoinput");
+    const current = selectEl.value;
     selectEl.innerHTML = "";
     cams.forEach((cam, i) => {
       const opt = document.createElement("option");
@@ -239,21 +307,19 @@ async function fillCameraList(selectEl) {
       opt.textContent = cam.label || ("Camera " + (i + 1));
       selectEl.appendChild(opt);
     });
+    if (current) selectEl.value = current;
   } catch (e) { console.warn(e); }
 }
 
 async function startCamera(videoEl, selectEl) {
-  // First request triggers the browser permission prompt.
   try {
     if (videoEl.srcObject) {
       videoEl.srcObject.getTracks().forEach(t => t.stop());
     }
     const constraints = { video: {} };
     if (selectEl.value) constraints.video.deviceId = { exact: selectEl.value };
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    videoEl.srcObject = stream;
-    // Labels are only available after permission is granted -> refill list.
-    await fillCameraList(selectEl);
+    videoEl.srcObject = await navigator.mediaDevices.getUserMedia(constraints);
+    await fillCameraList(selectEl);   // labels appear only after permission
     return true;
   } catch (e) {
     alert("Could not open the camera. Is Iriun running and connected?\n\n" + e);
@@ -266,8 +332,7 @@ async function startCamera(videoEl, selectEl) {
 // ====================================================================
 async function loadPeople() {
   try {
-    const r = await fetch("/people");
-    const data = await r.json();
+    const data = await (await fetch("/people")).json();
     renderPeople(data.people, data.count);
   } catch (e) { console.warn(e); }
 }
@@ -283,7 +348,7 @@ function renderPeople(people, count) {
   people.forEach(name => {
     const chip = document.createElement("div");
     chip.className = "chip";
-    chip.innerHTML = '<b>' + name + '</b>';
+    chip.innerHTML = "<b>" + name + "</b>";
     const x = document.createElement("span");
     x.textContent = "✕";
     x.title = "Remove " + name;
@@ -297,8 +362,7 @@ async function removePerson(name) {
   if (!confirm("Remove '" + name + "' from the database?")) return;
   const fd = new FormData();
   fd.append("name", name);
-  const r = await fetch("/remove", { method: "POST", body: fd });
-  const data = await r.json();
+  const data = await (await fetch("/remove", { method: "POST", body: fd })).json();
   if (data.ok) renderPeople(data.people, data.count);
 }
 
@@ -328,28 +392,41 @@ function addEnrollImage(blob) {
   renderTray();
 }
 
-// upload path
 $("enrollFiles").addEventListener("change", (e) => {
   for (const f of e.target.files) addEnrollImage(f);
-  e.target.value = "";   // allow picking the same file again later
+  e.target.value = "";
 });
 
-// webcam path
+// live "face detected" preview while the enrollment webcam is on
+let enrPreviewTimer = null;
+async function enrPreviewTick() {
+  const v = $("enrVideo");
+  if (!v.videoWidth) return;
+  try {
+    const fd = new FormData();
+    fd.append("image", await grabFrame(v), "f.jpg");
+    const data = await (await fetch("/detect", { method: "POST", body: fd })).json();
+    paintOverlay($("enrOverlay"), v, ctx => drawPlainBoxes(ctx, data.boxes || []));
+  } catch (e) { /* ignore a dropped frame */ }
+}
+
 $("enrCamStart").addEventListener("click", async () => {
   const ok = await startCamera($("enrVideo"), $("enrCam"));
   $("enrSnap").disabled = !ok;
+  if (ok && !enrPreviewTimer) {
+    let busy = false;
+    enrPreviewTimer = setInterval(async () => {
+      if (busy) return; busy = true; await enrPreviewTick(); busy = false;
+    }, 700);
+  }
 });
-$("enrCam").addEventListener("change", () =>
-  startCamera($("enrVideo"), $("enrCam")));
+$("enrCam").addEventListener("change", () => startCamera($("enrVideo"), $("enrCam")));
 $("enrSnap").addEventListener("click", async () => {
   try { addEnrollImage(await grabFrame($("enrVideo"))); }
   catch (e) { alert(e); }
 });
 
-$("enrollClear").addEventListener("click", () => {
-  enrollImages = [];
-  renderTray();
-});
+$("enrollClear").addEventListener("click", () => { enrollImages = []; renderTray(); });
 
 $("enrollBtn").addEventListener("click", async () => {
   const name = $("enrollName").value.trim();
@@ -365,13 +442,11 @@ $("enrollBtn").addEventListener("click", async () => {
   showMsg("enrollMsg", "Enrolling — running the photos through FaceNet…", "info");
   $("enrollBtn").disabled = true;
   try {
-    const r = await fetch("/enroll", { method: "POST", body: fd });
-    const data = await r.json();
+    const data = await (await fetch("/enroll", { method: "POST", body: fd })).json();
     showMsg("enrollMsg", data.message, data.ok ? "ok" : "err");
     if (data.ok) {
       renderPeople(data.people, data.count);
-      enrollImages = [];
-      renderTray();
+      enrollImages = []; renderTray();
       $("enrollName").value = "";
     }
   } catch (e) {
@@ -383,79 +458,80 @@ $("enrollBtn").addEventListener("click", async () => {
 // ====================================================================
 //  SECTION 2 - Testing / Recognition
 // ====================================================================
-function showResult(data) {
-  const box = $("recResult");
-  if (!data.ok) { showMsg("recMsg", data.message, "err"); return; }
-  showMsg("recMsg", "", "info"); $("recMsg").className = "msg";
-
-  if (!data.found) {
-    box.className = "result none";
-    box.innerHTML = '<div class="big">No face detected</div>' +
-                    '<div class="det">Try a clearer, closer photo.</div>';
-    return;
-  }
-  if (data.recognized) {
-    box.className = "result match";
-    box.innerHTML = '<div class="big">✓ ' + data.name + '</div>' +
-      '<div class="det">confidence ' + data.confidence + '%' +
-      '  ·  distance ' + data.distance +
-      '  (threshold ' + data.threshold + ')</div>';
-  } else {
-    box.className = "result unknown";
-    box.innerHTML = '<div class="big">Unknown</div>' +
-      '<div class="det">closest was "' + data.nearest + '" at distance ' +
-      data.distance + ' — beyond the ' + data.threshold + ' threshold</div>';
-  }
-}
-
 async function recognizeBlob(blob) {
   const fd = new FormData();
   fd.append("image", blob, "test.jpg");
-  const r = await fetch("/recognize", { method: "POST", body: fd });
-  return await r.json();
+  return await (await fetch("/recognize", { method: "POST", body: fd })).json();
 }
 
-// upload path
+// ---- upload mode ----
 $("recUploadBtn").addEventListener("click", async () => {
   const file = $("recFile").files[0];
   if (!file) { showMsg("recMsg", "Choose an image first.", "err"); return; }
   showMsg("recMsg", "Recognizing…", "info");
-  try { showResult(await recognizeBlob(file)); }
-  catch (e) { showMsg("recMsg", "Error: " + e, "err"); }
+  try {
+    const data = await recognizeBlob(file);
+    if (!data.ok) { showMsg("recMsg", data.message, "err"); return; }
+    showMsg("recMsg", "", "info");
+
+    // draw the uploaded image + boxes on the result canvas
+    const canvas = $("recCanvas");
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      drawFaces(ctx, data.faces);
+      canvas.style.display = "block";
+    };
+    img.src = URL.createObjectURL(file);
+    renderFaceList("recUploadList", data.faces);
+  } catch (e) {
+    showMsg("recMsg", "Error: " + e, "err");
+  }
 });
 
-// webcam path
+// ---- webcam mode ----
 $("recCamStart").addEventListener("click", async () => {
   const ok = await startCamera($("recVideo"), $("recCam"));
   $("recOnce").disabled = !ok;
   $("recLive").disabled = !ok;
 });
-$("recCam").addEventListener("change", () =>
-  startCamera($("recVideo"), $("recCam")));
+$("recCam").addEventListener("change", () => startCamera($("recVideo"), $("recCam")));
+
+async function recognizeWebcamFrame() {
+  const v = $("recVideo");
+  const data = await recognizeBlob(await grabFrame(v));
+  if (!data.ok) { showMsg("recMsg", data.message, "err"); return; }
+  showMsg("recMsg", "", "info");
+  paintOverlay($("recOverlay"), v, ctx => drawFaces(ctx, data.faces));
+  renderFaceList("recWebcamList", data.faces);
+}
 
 $("recOnce").addEventListener("click", async () => {
-  try { showResult(await recognizeBlob(await grabFrame($("recVideo")))); }
+  try { await recognizeWebcamFrame(); }
   catch (e) { showMsg("recMsg", "Error: " + e, "err"); }
 });
 
-// live (continuous) recognition
 let liveTimer = null;
-$("recLive").addEventListener("click", async () => {
+$("recLive").addEventListener("click", () => {
   if (liveTimer) {
     clearInterval(liveTimer);
     liveTimer = null;
-    $("recLive").textContent = "▶ Start live recognition";
+    $("recLive").innerHTML = "▶ Start live recognition";
+    $("recLive").classList.add("ghost");
     return;
   }
-  $("recLive").textContent = "⏸ Stop live recognition";
+  $("recLive").innerHTML = '<span class="live"></span>Stop live recognition';
+  $("recLive").classList.remove("ghost");
   let busy = false;
   liveTimer = setInterval(async () => {
-    if (busy) return;                 // skip if the previous request is still running
+    if (busy) return;
     busy = true;
-    try { showResult(await recognizeBlob(await grabFrame($("recVideo")))); }
-    catch (e) { /* ignore a dropped frame */ }
+    try { await recognizeWebcamFrame(); } catch (e) { /* skip frame */ }
     busy = false;
-  }, 800);
+  }, 700);
 });
 
 // ====================================================================
