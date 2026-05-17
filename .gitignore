@@ -12,7 +12,10 @@ embeddings.pkl
 data/faces/**/*.jpg
 data/faces/**/*.jpeg
 data/faces/**/*.png
+data/test/
 evaluation/results/
+evaluation/report.txt
+evaluation/threshold_accuracy.png
 
 # Model / torch cache
 *.pt

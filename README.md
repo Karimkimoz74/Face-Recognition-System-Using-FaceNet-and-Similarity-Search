@@ -115,6 +115,29 @@ python src/recognize.py --webcam 1           # live recognition from a camera
 
 The web app and the apps all use this one module for recognition.
 
+## Phase 6 — Evaluation
+
+`src/evaluate.py` measures accuracy, runs a threshold sweep, builds a
+confusion matrix, and reports speed (FPS).
+
+Test data goes in `data/test/` with one sub-folder per label:
+
+```
+data/test/Karim Mohamed/   # photos of an enrolled person
+data/test/Unknown/         # photos of strangers (not enrolled)
+```
+
+Get stranger photos (LFW's servers are down, so this uses AI-generated faces):
+
+```powershell
+python src/download_strangers.py        # fills data/test/Unknown/
+python src/evaluate.py                  # runs the evaluation
+```
+
+The evaluation saves `evaluation/report.txt` and a
+`evaluation/threshold_accuracy.png` plot, and recommends the best
+`RECOGNITION_THRESHOLD`. Our sweep chose **0.84** (now set in `recognize.py`).
+
 ## Team
 
 Rawan Mohamed · Malak Wael · Omar Mohamed · Karim Mohamed · Mohamed Gasser · Ziad Amr

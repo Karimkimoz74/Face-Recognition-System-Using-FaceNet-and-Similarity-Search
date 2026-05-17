@@ -43,10 +43,11 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 #    - too LOW  -> the system is too strict; it calls real people "Unknown"
 #    - too HIGH -> the system is too loose; it confuses different people
 #
-#  1.0 is a sensible starting value. Phase 6 measures the BEST value using
-#  real photos of the team, so treat this as a tunable setting, not a fact.
+#  Phase 6 ran a threshold sweep on real photos (team members + 25 strangers)
+#  and 0.84 gave the best balanced accuracy - so that is the value used here.
+#  Re-run  python src/evaluate.py  if the dataset changes, then update this.
 # ==========================================================================
-RECOGNITION_THRESHOLD = 1.0
+RECOGNITION_THRESHOLD = 0.84
 
 UNKNOWN_LABEL = "Unknown"
 

@@ -8,3 +8,4 @@ opencv-python      # webcam capture, drawing, image I/O
 numpy              # embedding storage + Euclidean distance
 Pillow             # image loading (used by facenet-pytorch)
 flask              # web app for enrollment + testing in the browser
+matplotlib         # plots for the Phase 6 evaluation (optional)
