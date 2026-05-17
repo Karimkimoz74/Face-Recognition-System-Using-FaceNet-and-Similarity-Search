@@ -52,6 +52,22 @@ pip install -r requirements.txt
 > Iriun note: the Iriun desktop app must be running and the phone connected
 > **before** launching these scripts, or the camera will not be found.
 
+## Phase 2 — Face embedding
+
+`src/embedder.py` turns a face into a 512-number embedding vector
+(image → MTCNN crop → FaceNet → embedding). It is imported by later phases,
+and can also be run directly to test it:
+
+```powershell
+python src/embedder.py --image photo.jpg          # embed one image, show info
+python src/embedder.py --compare a.jpg b.jpg       # distance between two faces
+python src/embedder.py --webcam 1                  # live: SPACE = embed, q = quit
+```
+
+Same person → small distance (< ~1.0). Different people → large distance (> ~1.1).
+
+> The first run downloads the FaceNet weights (~110 MB) automatically.
+
 ## Team
 
 Rawan Mohamed · Malak Wael · Omar Mohamed · Karim Mohamed · Mohamed Gasser · Ziad Amr
