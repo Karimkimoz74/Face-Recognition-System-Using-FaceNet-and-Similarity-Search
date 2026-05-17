@@ -21,7 +21,13 @@ Image mode saves an annotated copy next to the input as <name>_detected.jpg
 
 import argparse
 import os
+import warnings
+
 import cv2
+
+# facenet-pytorch loads its weights with torch.load(), which prints a noisy
+# (but harmless) FutureWarning. Hide it so the script output stays clean.
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 # MTCNN is imported lazily inside main() so that --help still works even
 # before the dependencies are installed.
