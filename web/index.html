@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Face Recognition — Enrollment &amp; Testing</title>
+<style>
+  :root {
+    --bg:#0f172a; --card:#1e293b; --card2:#162032; --accent:#38bdf8;
+    --accent2:#818cf8; --green:#34d399; --amber:#fbbf24; --red:#f87171;
+    --text:#e2e8f0; --muted:#94a3b8; --border:#334155;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+    font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif; line-height:1.55; }
+  .wrap { max-width:1000px; margin:0 auto; padding:32px 22px 80px; }
+  header { border-bottom:2px solid var(--border); padding-bottom:18px; margin-bottom:22px; }
+  h1 { margin:0 0 4px; font-size:1.7rem;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .sub { color:var(--muted); font-size:.92rem; }
+  h2 { font-size:1.2rem; color:var(--accent); margin:0 0 14px; }
+  .card { background:var(--card); border:1px solid var(--border);
+    border-radius:12px; padding:22px; margin:18px 0; }
+  .num { display:inline-block; width:26px; height:26px; line-height:26px;
+    text-align:center; background:var(--accent); color:#0f172a;
+    border-radius:50%; font-weight:700; margin-right:8px; }
+  label { font-size:.85rem; color:var(--muted); display:block; margin:12px 0 4px; }
+  input[type=text] { width:100%; padding:10px 12px; border-radius:8px;
+    border:1px solid var(--border); background:var(--card2); color:var(--text);
+    font-size:1rem; }
+  button { cursor:pointer; border:none; border-radius:8px; padding:9px 16px;
+    font-size:.9rem; font-weight:600; background:var(--accent); color:#0f172a; }
+  button:hover { filter:brightness(1.1); }
+  button.ghost { background:transparent; color:var(--accent);
+    border:1px solid var(--border); }
+  button.danger { background:var(--red); color:#0f172a; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  .tabs { display:flex; gap:6px; margin:14px 0 0; }
+  .tab { padding:7px 14px; border-radius:8px 8px 0 0; background:var(--card2);
+    color:var(--muted); font-size:.85rem; font-weight:600; cursor:pointer;
+    border:1px solid var(--border); border-bottom:none; }
+  .tab.active { background:var(--accent); color:#0f172a; }
+  .panel { border:1px solid var(--border); border-radius:0 8px 8px 8px;
+    padding:16px; background:var(--card2); }
+  video { width:100%; max-width:420px; border-radius:8px; background:#000;
+    display:block; }
+  select { padding:7px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--card2); color:var(--text); font-size:.85rem; max-width:100%; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+  .tray { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .thumb { position:relative; width:72px; height:72px; border-radius:8px;
+    overflow:hidden; border:1px solid var(--border); }
+  .thumb img { width:100%; height:100%; object-fit:cover; }
+  .thumb span { position:absolute; top:1px; right:3px; cursor:pointer;
+    color:#fff; background:rgba(0,0,0,.6); border-radius:50%;
+    width:18px; height:18px; line-height:16px; text-align:center; font-size:.8rem; }
+  .people { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .chip { background:var(--card2); border:1px solid var(--border);
+    border-radius:999px; padding:5px 12px; font-size:.85rem; display:flex;
+    align-items:center; gap:8px; }
+  .chip b { color:var(--accent2); }
+  .chip span { cursor:pointer; color:var(--red); font-weight:700; }
+  .msg { margin-top:12px; padding:10px 14px; border-radius:8px; font-size:.9rem;
+    display:none; }
+  .msg.ok { display:block; background:#0d3026; border:1px solid var(--green);
+    color:var(--green); }
+  .msg.err { display:block; background:#3a1212; border:1px solid var(--red);
+    color:var(--red); }
+  .msg.info { display:block; background:#10243a; border:1px solid var(--accent);
+    color:var(--accent); }
+  .result { margin-top:14px; padding:18px; border-radius:10px; text-align:center;
+    border:1px solid var(--border); background:var(--card2); }
+  .result .big { font-size:1.6rem; font-weight:800; }
+  .result .det { color:var(--muted); font-size:.85rem; margin-top:4px; }
+  .result.match { border-color:var(--green); }
+  .result.match .big { color:var(--green); }
+  .result.unknown { border-color:var(--amber); }
+  .result.unknown .big { color:var(--amber); }
+  .result.none { border-color:var(--muted); }
+  .hint { font-size:.8rem; color:var(--muted); margin-top:6px; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Face Recognition System</h1>
+  <div class="sub">FaceNet + Similarity Search &mdash; enroll people, then test recognition</div>
+</header>
+
+<!-- ENROLLED PEOPLE -------------------------------------------------------->
+<div class="card">
+  <h2>Enrolled People (<span id="peopleCount">0</span>)</h2>
+  <div id="peopleList" class="people"><span class="hint">Loading…</span></div>
+</div>
+
+<!-- SECTION 1 - ENROLLMENT ------------------------------------------------->
+<div class="card">
+  <h2><span class="num">1</span>Enrollment</h2>
+  <p class="hint">Give the person a name and add several face photos (at least 3,
+     about 5 recommended). The photos are averaged into one "face signature".</p>
+
+  <label for="enrollName">Person's name</label>
+  <input type="text" id="enrollName" placeholder="e.g. Karim Mohamed">
+
+  <div class="tabs">
+    <div class="tab active" data-tab="enrUpload">Upload images</div>
+    <div class="tab" data-tab="enrWebcam">Use webcam</div>
+  </div>
+
+  <!-- upload panel -->
+  <div class="panel" id="enrUpload">
+    <label for="enrollFiles">Choose one or more photos</label>
+    <input type="file" id="enrollFiles" accept="image/*" multiple>
+  </div>
+
+  <!-- webcam panel -->
+  <div class="panel hidden" id="enrWebcam">
+    <div class="row">
+      <select id="enrCam"></select>
+      <button class="ghost" id="enrCamStart">Enable camera</button>
+    </div>
+    <div style="margin-top:10px">
+      <video id="enrVideo" autoplay playsinline muted></video>
+    </div>
+    <div class="row">
+      <button id="enrSnap" disabled>📷 Capture photo</button>
+    </div>
+  </div>
+
+  <div class="hint">Images to enroll (<span id="trayCount">0</span>):</div>
+  <div class="tray" id="enrollTray"></div>
+
+  <div class="row">
+    <button id="enrollBtn">Enroll Person</button>
+    <button class="ghost" id="enrollClear">Clear images</button>
+  </div>
+  <div class="msg" id="enrollMsg"></div>
+</div>
+
+<!-- SECTION 2 - TESTING ---------------------------------------------------->
+<div class="card">
+  <h2><span class="num">2</span>Testing the Enrollment</h2>
+  <p class="hint">Provide a face and the system finds the closest enrolled person.
+     If the closest match is too far away, it answers "Unknown".</p>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="recUpload">Upload image</div>
+    <div class="tab" data-tab="recWebcam">Use webcam</div>
+  </div>
+
+  <!-- upload panel -->
+  <div class="panel" id="recUpload">
+    <label for="recFile">Choose a photo to identify</label>
+    <input type="file" id="recFile" accept="image/*">
+    <div class="row">
+      <button id="recUploadBtn">Recognize</button>
+    </div>
+  </div>
+
+  <!-- webcam panel -->
+  <div class="panel hidden" id="recWebcam">
+    <div class="row">
+      <select id="recCam"></select>
+      <button class="ghost" id="recCamStart">Enable camera</button>
+    </div>
+    <div style="margin-top:10px">
+      <video id="recVideo" autoplay playsinline muted></video>
+    </div>
+    <div class="row">
+      <button id="recOnce" disabled>Recognize once</button>
+      <button id="recLive" class="ghost" disabled>▶ Start live recognition</button>
+    </div>
+  </div>
+
+  <div class="result none" id="recResult">
+    <div class="big">—</div>
+    <div class="det">Result will appear here</div>
+  </div>
+  <div class="msg" id="recMsg"></div>
+</div>
+
+<script>
+// ====================================================================
+//  Small helpers
+// ====================================================================
+const $ = (id) => document.getElementById(id);
+
+/** Switch the visible panel inside a group of tabs. */
+function wireTabs(tabSelector) {
+  document.querySelectorAll(tabSelector).forEach(tab => {
+    tab.addEventListener("click", () => {
+      const group = tab.parentElement;
+      group.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      // panels are the siblings right after the tabs group
+      let el = group.nextElementSibling;
+      while (el && el.classList.contains("panel")) {
+        el.classList.add("hidden");
+        el = el.nextElementSibling;
+      }
+      $(tab.dataset.tab).classList.remove("hidden");
+    });
+  });
+}
+wireTabs(".tabs .tab");
+
+function showMsg(id, text, kind) {
+  const el = $(id);
+  el.textContent = text;
+  el.className = "msg " + kind;
+}
+
+/** Capture the current video frame as a JPEG Blob. */
+function grabFrame(video) {
+  return new Promise((resolve, reject) => {
+    if (!video.videoWidth) { reject("Camera not ready yet."); return; }
+    const c = document.createElement("canvas");
+    c.width = video.videoWidth;
+    c.height = video.videoHeight;
+    c.getContext("2d").drawImage(video, 0, 0);
+    c.toBlob(b => resolve(b), "image/jpeg", 0.92);
+  });
+}
+
+// ====================================================================
+//  Camera handling (shared by both sections)
+// ====================================================================
+async function fillCameraList(selectEl) {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cams = devices.filter(d => d.kind === "videoinput");
+    selectEl.innerHTML = "";
+    cams.forEach((cam, i) => {
+      const opt = document.createElement("option");
+      opt.value = cam.deviceId;
+      opt.textContent = cam.label || ("Camera " + (i + 1));
+      selectEl.appendChild(opt);
+    });
+  } catch (e) { console.warn(e); }
+}
+
+async function startCamera(videoEl, selectEl) {
+  // First request triggers the browser permission prompt.
+  try {
+    if (videoEl.srcObject) {
+      videoEl.srcObject.getTracks().forEach(t => t.stop());
+    }
+    const constraints = { video: {} };
+    if (selectEl.value) constraints.video.deviceId = { exact: selectEl.value };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    videoEl.srcObject = stream;
+    // Labels are only available after permission is granted -> refill list.
+    await fillCameraList(selectEl);
+    return true;
+  } catch (e) {
+    alert("Could not open the camera. Is Iriun running and connected?\n\n" + e);
+    return false;
+  }
+}
+
+// ====================================================================
+//  Enrolled people list
+// ====================================================================
+async function loadPeople() {
+  try {
+    const r = await fetch("/people");
+    const data = await r.json();
+    renderPeople(data.people, data.count);
+  } catch (e) { console.warn(e); }
+}
+
+function renderPeople(people, count) {
+  $("peopleCount").textContent = count;
+  const box = $("peopleList");
+  if (!people.length) {
+    box.innerHTML = '<span class="hint">No one enrolled yet — use Section 1.</span>';
+    return;
+  }
+  box.innerHTML = "";
+  people.forEach(name => {
+    const chip = document.createElement("div");
+    chip.className = "chip";
+    chip.innerHTML = '<b>' + name + '</b>';
+    const x = document.createElement("span");
+    x.textContent = "✕";
+    x.title = "Remove " + name;
+    x.onclick = () => removePerson(name);
+    chip.appendChild(x);
+    box.appendChild(chip);
+  });
+}
+
+async function removePerson(name) {
+  if (!confirm("Remove '" + name + "' from the database?")) return;
+  const fd = new FormData();
+  fd.append("name", name);
+  const r = await fetch("/remove", { method: "POST", body: fd });
+  const data = await r.json();
+  if (data.ok) renderPeople(data.people, data.count);
+}
+
+// ====================================================================
+//  SECTION 1 - Enrollment
+// ====================================================================
+let enrollImages = [];   // list of { blob, url }
+
+function renderTray() {
+  $("trayCount").textContent = enrollImages.length;
+  const tray = $("enrollTray");
+  tray.innerHTML = "";
+  enrollImages.forEach((item, i) => {
+    const d = document.createElement("div");
+    d.className = "thumb";
+    d.innerHTML = '<img src="' + item.url + '">';
+    const x = document.createElement("span");
+    x.textContent = "✕";
+    x.onclick = () => { enrollImages.splice(i, 1); renderTray(); };
+    d.appendChild(x);
+    tray.appendChild(d);
+  });
+}
+
+function addEnrollImage(blob) {
+  enrollImages.push({ blob: blob, url: URL.createObjectURL(blob) });
+  renderTray();
+}
+
+// upload path
+$("enrollFiles").addEventListener("change", (e) => {
+  for (const f of e.target.files) addEnrollImage(f);
+  e.target.value = "";   // allow picking the same file again later
+});
+
+// webcam path
+$("enrCamStart").addEventListener("click", async () => {
+  const ok = await startCamera($("enrVideo"), $("enrCam"));
+  $("enrSnap").disabled = !ok;
+});
+$("enrCam").addEventListener("change", () =>
+  startCamera($("enrVideo"), $("enrCam")));
+$("enrSnap").addEventListener("click", async () => {
+  try { addEnrollImage(await grabFrame($("enrVideo"))); }
+  catch (e) { alert(e); }
+});
+
+$("enrollClear").addEventListener("click", () => {
+  enrollImages = [];
+  renderTray();
+});
+
+$("enrollBtn").addEventListener("click", async () => {
+  const name = $("enrollName").value.trim();
+  if (!name) { showMsg("enrollMsg", "Please enter a name.", "err"); return; }
+  if (enrollImages.length < 3) {
+    showMsg("enrollMsg", "Add at least 3 images (about 5 is best).", "err");
+    return;
+  }
+  const fd = new FormData();
+  fd.append("name", name);
+  enrollImages.forEach((it, i) => fd.append("images", it.blob, "img" + i + ".jpg"));
+
+  showMsg("enrollMsg", "Enrolling — running the photos through FaceNet…", "info");
+  $("enrollBtn").disabled = true;
+  try {
+    const r = await fetch("/enroll", { method: "POST", body: fd });
+    const data = await r.json();
+    showMsg("enrollMsg", data.message, data.ok ? "ok" : "err");
+    if (data.ok) {
+      renderPeople(data.people, data.count);
+      enrollImages = [];
+      renderTray();
+      $("enrollName").value = "";
+    }
+  } catch (e) {
+    showMsg("enrollMsg", "Error contacting the server: " + e, "err");
+  }
+  $("enrollBtn").disabled = false;
+});
+
+// ====================================================================
+//  SECTION 2 - Testing / Recognition
+// ====================================================================
+function showResult(data) {
+  const box = $("recResult");
+  if (!data.ok) { showMsg("recMsg", data.message, "err"); return; }
+  showMsg("recMsg", "", "info"); $("recMsg").className = "msg";
+
+  if (!data.found) {
+    box.className = "result none";
+    box.innerHTML = '<div class="big">No face detected</div>' +
+                    '<div class="det">Try a clearer, closer photo.</div>';
+    return;
+  }
+  if (data.recognized) {
+    box.className = "result match";
+    box.innerHTML = '<div class="big">✓ ' + data.name + '</div>' +
+      '<div class="det">distance ' + data.distance +
+      '  (threshold ' + data.threshold + ')</div>';
+  } else {
+    box.className = "result unknown";
+    box.innerHTML = '<div class="big">Unknown</div>' +
+      '<div class="det">closest was "' + data.nearest + '" at distance ' +
+      data.distance + ' — beyond the ' + data.threshold + ' threshold</div>';
+  }
+}
+
+async function recognizeBlob(blob) {
+  const fd = new FormData();
+  fd.append("image", blob, "test.jpg");
+  const r = await fetch("/recognize", { method: "POST", body: fd });
+  return await r.json();
+}
+
+// upload path
+$("recUploadBtn").addEventListener("click", async () => {
+  const file = $("recFile").files[0];
+  if (!file) { showMsg("recMsg", "Choose an image first.", "err"); return; }
+  showMsg("recMsg", "Recognizing…", "info");
+  try { showResult(await recognizeBlob(file)); }
+  catch (e) { showMsg("recMsg", "Error: " + e, "err"); }
+});
+
+// webcam path
+$("recCamStart").addEventListener("click", async () => {
+  const ok = await startCamera($("recVideo"), $("recCam"));
+  $("recOnce").disabled = !ok;
+  $("recLive").disabled = !ok;
+});
+$("recCam").addEventListener("change", () =>
+  startCamera($("recVideo"), $("recCam")));
+
+$("recOnce").addEventListener("click", async () => {
+  try { showResult(await recognizeBlob(await grabFrame($("recVideo")))); }
+  catch (e) { showMsg("recMsg", "Error: " + e, "err"); }
+});
+
+// live (continuous) recognition
+let liveTimer = null;
+$("recLive").addEventListener("click", async () => {
+  if (liveTimer) {
+    clearInterval(liveTimer);
+    liveTimer = null;
+    $("recLive").textContent = "▶ Start live recognition";
+    return;
+  }
+  $("recLive").textContent = "⏸ Stop live recognition";
+  let busy = false;
+  liveTimer = setInterval(async () => {
+    if (busy) return;                 // skip if the previous request is still running
+    busy = true;
+    try { showResult(await recognizeBlob(await grabFrame($("recVideo")))); }
+    catch (e) { /* ignore a dropped frame */ }
+    busy = false;
+  }, 800);
+});
+
+// ====================================================================
+//  Startup
+// ====================================================================
+loadPeople();
+renderTray();
+</script>
+</body>
+</html>

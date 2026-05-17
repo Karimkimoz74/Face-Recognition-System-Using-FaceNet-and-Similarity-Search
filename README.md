@@ -68,6 +68,36 @@ Same person → small distance (< ~1.0). Different people → large distance (> 
 
 > The first run downloads the FaceNet weights (~110 MB) automatically.
 
+## Phase 3 — Face database / enrollment
+
+`src/database.py` stores the people the system knows. Each person is saved as
+one averaged 512-d embedding ("face signature") in `embeddings.pkl`.
+
+```powershell
+python src/database.py --capture "Karim" --webcam 1   # enroll a person via webcam
+python src/database.py --enroll-folder                # enroll from data/faces/ folders
+python src/database.py --list                         # list enrolled people
+python src/database.py --remove "Karim"               # remove a person
+```
+
+Webcam enrollment: press `SPACE` to capture each photo (at least 3, ~5 recommended),
+`q` to finish. To enroll from folders instead, put photos in
+`data/faces/<PersonName>/`.
+
+## Web app (recommended) — enrollment & testing in the browser
+
+`src/web_app.py` runs a small website with two sections:
+
+- **Enrollment** — type a name, add face photos (upload *or* webcam capture).
+- **Testing** — identify a face (upload *or* live webcam recognition).
+
+```powershell
+python src/web_app.py
+```
+
+Then open **http://127.0.0.1:5000** in your browser. The web app reuses
+`embedder.py` and `database.py`, and saves to the same `embeddings.pkl`.
+
 ## Team
 
 Rawan Mohamed · Malak Wael · Omar Mohamed · Karim Mohamed · Mohamed Gasser · Ziad Amr
