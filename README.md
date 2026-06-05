@@ -1,19 +1,12 @@
----
-title: Face Recognition (FaceNet)
-emoji: 🧑‍🤝‍🧑
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-app_port: 7860
-pinned: false
-short_description: Browser face recognition using FaceNet + similarity search
----
-
 # Face Recognition System Using FaceNet and Similarity Search
 
 Neural Networks Project — Semester 8.
 
-> **Live demo (Hugging Face Space):** https://huggingface.co/spaces/Karimkimoz74/face-recognition
+> **🌍 Live demo (Modal):** https://karimkimoz74--face-recognition-web.modal.run
+>
+> Deployed via `modal_app.py` on [Modal](https://modal.com). First visit takes
+> ~15 s (cold start while FaceNet loads); after that it is fast. The enrolled
+> people are stored in a persistent Modal Volume.
 
 A face recognition system that uses a pre-trained **FaceNet** model
 (`InceptionResnetV1`) to convert faces into 512-dimensional embeddings, then
