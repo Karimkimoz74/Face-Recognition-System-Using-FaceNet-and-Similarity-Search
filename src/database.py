@@ -37,7 +37,10 @@ from embedder import FaceEmbedder
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SRC_DIR)
 FACES_DIR = os.path.join(PROJECT_ROOT, "data", "faces")
-DB_PATH = os.path.join(PROJECT_ROOT, "embeddings.pkl")
+# DB_PATH can be overridden via env var (used by the Modal deployment to point
+# the database at a persistent Volume mounted at /data).
+DB_PATH = os.environ.get("FACEREC_DB_PATH",
+                         os.path.join(PROJECT_ROOT, "embeddings.pkl"))
 
 MIN_PHOTOS = 3      # minimum photos needed to enroll a person well
 
